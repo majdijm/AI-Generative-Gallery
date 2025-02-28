@@ -94,12 +94,22 @@ def parse_metadata_string(params_str):
         try:
             json_data = json.loads(params_str)
             if isinstance(json_data, dict):
+                # Map known JSON fields
                 if 'prompt' in json_data:
                     metadata['prompt'] = json_data['prompt']
                 if 'negative' in json_data:
                     metadata['negative_prompt'] = json_data['negative']
                 if 'seed' in json_data:
                     metadata['seed'] = str(json_data['seed'])
+                if 'sampler' in json_data:
+                    metadata['sampler'] = json_data['sampler']
+                if 'steps' in json_data:
+                    metadata['steps'] = str(json_data['steps'])
+                if 'cfg_scale' in json_data:
+                    metadata['cfg_scale'] = str(json_data['cfg_scale'])
+                if 'model' in json_data:
+                    metadata['model'] = json_data['model']
+                    metadata['model_name'] = json_data['model']
                 return metadata
         except json.JSONDecodeError:
             pass
@@ -123,14 +133,14 @@ def parse_metadata_string(params_str):
             
             # If we're in negative prompt section, append to it
             if current_section == 'negative':
-                if ':' in line:  # New section started
+                if ':' in line and not line.lower().startswith('negative prompt:'):  # New section started
                     current_section = None
                 else:
                     metadata['negative_prompt'] += ' ' + line
                     continue
             
-            # If no negative prompt found yet, this must be the positive prompt
-            if not metadata['prompt'] and not ':' in line:
+            # If no negative prompt found yet and no colon, this must be the positive prompt
+            if not metadata['prompt'] and not ':' in line and not line.lower().startswith('negative prompt:'):
                 metadata['prompt'] = line
                 continue
             
@@ -140,24 +150,32 @@ def parse_metadata_string(params_str):
                 key = key.strip().lower()
                 value = value.strip()
                 
-                if 'step' in key:
-                    metadata['steps'] = value.split(',')[0].strip()
-                elif 'sampler' in key:
-                    metadata['sampler'] = value.split(',')[0].strip()
-                elif 'cfg' in key:
-                    metadata['cfg_scale'] = value.split(',')[0].strip()
+                # Remove common suffixes and prefixes
+                value = value.split(',')[0].strip()
+                value = value.split('(')[0].strip()
+                value = value.split('[')[0].strip()
+                
+                if any(x in key for x in ['step', 'iter']):
+                    metadata['steps'] = value
+                elif any(x in key for x in ['sampler', 'scheduler', 'method']):
+                    metadata['sampler'] = value
+                elif any(x in key for x in ['cfg', 'scale', 'guidance']):
+                    metadata['cfg_scale'] = value
                 elif 'seed' in key:
-                    metadata['seed'] = value.split(',')[0].strip()
+                    metadata['seed'] = value
                 elif 'size' in key:
-                    metadata['size'] = value.split(',')[0].strip()
-                elif 'model' in key and 'hash' not in key:
-                    metadata['model'] = value.split(',')[0].strip()
-                    metadata['model_name'] = value.split(',')[0].strip()
+                    metadata['size'] = value
+                elif any(x in key for x in ['model', 'checkpoint', 'ckpt']):
+                    if 'hash' not in key.lower():
+                        metadata['model'] = value
+                        metadata['model_name'] = value.split('[')[0].strip()
                 elif 'prompt' in key and not metadata['prompt']:
                     metadata['prompt'] = value
     
     except Exception as e:
         print(f"Error parsing metadata: {e}")
+        import traceback
+        traceback.print_exc()
         
     return metadata
 
