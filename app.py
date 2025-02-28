@@ -5,7 +5,6 @@ import os
 import json
 import re
 from PIL import Image
-from better_profanity import profanity
 
 app = Flask(__name__)
 
@@ -16,8 +15,17 @@ app.config['METADATA_FILE'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 # Create upload folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize profanity filter
-profanity.load_censor_words()
+# Try to import profanity filter, fallback to simple check if not available
+try:
+    from better_profanity import profanity
+    profanity.load_censor_words()
+    def check_profanity(text):
+        return profanity.contains_profanity(text)
+except ImportError:
+    def check_profanity(text):
+        # Simple fallback profanity check
+        basic_profanity = ['nsfw', 'explicit', 'adult']
+        return any(word in text.lower() for word in basic_profanity)
 
 def extract_ai_metadata(image_path):
     """Extract metadata from AI-generated images"""
@@ -193,8 +201,7 @@ def load_metadata():
 
 def check_nsfw_content(image_path, text):
     """Check if image or text contains NSFW content"""
-    # Simplified NSFW check using just text
-    if text and profanity.contains_profanity(text):
+    if text and check_profanity(text):
         return True
     return False
 
