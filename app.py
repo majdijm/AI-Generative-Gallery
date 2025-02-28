@@ -28,7 +28,8 @@ def extract_ai_metadata(image_path):
             
             # Try to get PNG text chunks
             if 'parameters' in img.info:
-                print("Found parameters in PNG chunks")
+                print("\nFound parameters in PNG chunks:")
+                print(img.info['parameters'])
                 params = img.info['parameters']
                 # Parse the parameters
                 parsed = parse_metadata_string(params)
@@ -39,11 +40,12 @@ def extract_ai_metadata(image_path):
             
             # Try to get EXIF data if we don't have complete metadata
             if not metadata.get('prompt') and hasattr(img, '_getexif') and img._getexif() is not None:
-                print("Found EXIF data")
+                print("\nFound EXIF data:")
                 exif = img._getexif()
                 if 37510 in exif:  # UserComment tag
                     try:
                         exif_data = exif[37510].decode('utf8')
+                        print(exif_data)
                         parsed = parse_metadata_string(exif_data)
                         # Update metadata with parsed values
                         for key, value in parsed.items():
@@ -54,9 +56,10 @@ def extract_ai_metadata(image_path):
             
             # Try to get Fooocus metadata if we still don't have complete metadata
             if 'fooocus_v2' in img.info:
-                print("Found Fooocus metadata")
+                print("\nFound Fooocus metadata:")
                 try:
                     fooocus_data = json.loads(img.info['fooocus_v2'])
+                    print(json.dumps(fooocus_data, indent=2))
                     if 'prompt' in fooocus_data and not metadata.get('prompt'):
                         metadata['prompt'] = fooocus_data['prompt']
                     if 'negative' in fooocus_data and not metadata.get('negative_prompt'):
@@ -66,7 +69,8 @@ def extract_ai_metadata(image_path):
                 except:
                     pass
         
-        print("Extracted metadata:", json.dumps(metadata, indent=2))
+        print("\nFinal extracted metadata:")
+        print(json.dumps(metadata, indent=2))
         return metadata
         
     except Exception as e:
@@ -90,10 +94,15 @@ def parse_metadata_string(params_str):
     }
     
     try:
+        print("\nParsing metadata string:")
+        print(params_str)
+        
         # Try to parse as JSON first
         try:
             json_data = json.loads(params_str)
             if isinstance(json_data, dict):
+                print("\nParsed as JSON:")
+                print(json.dumps(json_data, indent=2))
                 # Map known JSON fields
                 if 'prompt' in json_data:
                     metadata['prompt'] = json_data['prompt']
@@ -115,11 +124,13 @@ def parse_metadata_string(params_str):
             pass
 
         # If not JSON, parse as string
+        print("\nParsing as string:")
         lines = params_str.split('\n')
         current_section = None
         
         for line in lines:
             line = line.strip()
+            print(f"Processing line: {line}")
             
             # Skip empty lines
             if not line:
@@ -129,6 +140,7 @@ def parse_metadata_string(params_str):
             if line.lower().startswith('negative prompt:'):
                 current_section = 'negative'
                 metadata['negative_prompt'] = line[15:].strip()
+                print(f"Found negative prompt: {metadata['negative_prompt']}")
                 continue
             
             # If we're in negative prompt section, append to it
@@ -142,6 +154,7 @@ def parse_metadata_string(params_str):
             # If no negative prompt found yet and no colon, this must be the positive prompt
             if not metadata['prompt'] and not ':' in line and not line.lower().startswith('negative prompt:'):
                 metadata['prompt'] = line
+                print(f"Found prompt: {metadata['prompt']}")
                 continue
             
             # Parse key-value pairs
@@ -150,6 +163,8 @@ def parse_metadata_string(params_str):
                 key = key.strip().lower()
                 value = value.strip()
                 
+                print(f"\nParsing key-value: {key} = {value}")
+                
                 # Remove common suffixes and prefixes
                 value = value.split(',')[0].strip()
                 value = value.split('(')[0].strip()
@@ -157,26 +172,35 @@ def parse_metadata_string(params_str):
                 
                 if any(x in key for x in ['step', 'iter']):
                     metadata['steps'] = value
+                    print(f"Found steps: {value}")
                 elif any(x in key for x in ['sampler', 'scheduler', 'method']):
                     metadata['sampler'] = value
+                    print(f"Found sampler: {value}")
                 elif any(x in key for x in ['cfg', 'scale', 'guidance']):
                     metadata['cfg_scale'] = value
+                    print(f"Found cfg_scale: {value}")
                 elif 'seed' in key:
                     metadata['seed'] = value
+                    print(f"Found seed: {value}")
                 elif 'size' in key:
                     metadata['size'] = value
-                elif any(x in key for x in ['model', 'checkpoint', 'ckpt']):
+                    print(f"Found size: {value}")
+                elif any(x in key for x in ['model', 'checkpoint', 'ckpt', 'base model']):
                     if 'hash' not in key.lower():
                         metadata['model'] = value
                         metadata['model_name'] = value.split('[')[0].strip()
+                        print(f"Found model: {value}")
                 elif 'prompt' in key and not metadata['prompt']:
                     metadata['prompt'] = value
+                    print(f"Found prompt from key: {value}")
     
     except Exception as e:
         print(f"Error parsing metadata: {e}")
         import traceback
         traceback.print_exc()
         
+    print("\nParsed metadata:")
+    print(json.dumps(metadata, indent=2))
     return metadata
 
 def load_metadata():
