@@ -5,7 +5,6 @@ import os
 import json
 import re
 from PIL import Image
-import tensorflow as tf
 from better_profanity import profanity
 
 app = Flask(__name__)
@@ -17,8 +16,8 @@ app.config['METADATA_FILE'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 # Create upload folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize the model
-model = tf.keras.applications.MobileNetV2(weights='imagenet')
+# Initialize profanity filter
+profanity.load_censor_words()
 
 def extract_ai_metadata(image_path):
     """Extract metadata from AI-generated images"""
@@ -193,41 +192,11 @@ def load_metadata():
     return {}
 
 def check_nsfw_content(image_path, text):
-    """Check if image or text contains NSFW content using image classification"""
-    is_nsfw = False
-    reasons = []
-    
-    # Check image content
-    try:
-        # Load and preprocess the image
-        img = tf.keras.preprocessing.image.load_img(image_path, target_size=(224, 224))
-        img_array = tf.keras.preprocessing.image.img_to_array(img)
-        img_array = tf.expand_dims(img_array, 0)
-        img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
-        
-        # Get predictions
-        predictions = model.predict(img_array)
-        predicted_classes = tf.keras.applications.mobilenet_v2.decode_predictions(predictions, top=3)[0]
-        
-        # List of potentially sensitive categories
-        sensitive_categories = ['bikini', 'brassiere', 'swimsuit', 'negligee', 'nudity', 'adult']
-        
-        # Check if any of the top predictions are in sensitive categories
-        for _, class_name, confidence in predicted_classes:
-            if any(category in class_name.lower() for category in sensitive_categories) and confidence > 0.3:
-                is_nsfw = True
-                reasons.append(f"Image may contain sensitive content ({class_name})")
-                break
-    
-    except Exception as e:
-        print(f"Error checking image content: {e}")
-    
-    # Check text content
+    """Check if image or text contains NSFW content"""
+    # Simplified NSFW check using just text
     if text and profanity.contains_profanity(text):
-        is_nsfw = True
-        reasons.append("Text contains inappropriate content")
-    
-    return is_nsfw, reasons
+        return True
+    return False
 
 @app.route('/')
 def index():
@@ -310,7 +279,7 @@ def upload_file():
 
         # Check for NSFW content
         prompt_text = request.form.get('prompt', '') + ' ' + request.form.get('negative_prompt', '')
-        is_nsfw, reasons = check_nsfw_content(filepath, prompt_text)
+        is_nsfw = check_nsfw_content(filepath, prompt_text)
 
         # Extract metadata from image
         img_metadata = extract_ai_metadata(filepath)
@@ -330,8 +299,7 @@ def upload_file():
             'cfg_scale': request.form.get('cfg_scale') or img_metadata.get('cfg_scale', ''),
             'seed': request.form.get('seed') or img_metadata.get('seed', ''),
             'size': request.form.get('size') or img_metadata.get('size', ''),
-            'is_nsfw': is_nsfw,
-            'nsfw_reasons': reasons
+            'is_nsfw': is_nsfw
         }
 
         # Save to metadata file
@@ -343,8 +311,7 @@ def upload_file():
             'success': True,
             'filename': filename,
             'metadata': metadata,
-            'is_nsfw': is_nsfw,
-            'nsfw_reasons': reasons
+            'is_nsfw': is_nsfw
         })
 
     except Exception as e:
