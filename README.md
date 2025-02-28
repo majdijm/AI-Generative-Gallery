@@ -7,8 +7,8 @@ Developed by AIVirtus - Majdi El-Jazmawi
 ## Features
 
 - 🖼️ Clean, responsive image gallery interface
-- 🔍 Automatic metadata extraction from AI-generated images
-- 🏷️ Support for multiple AI model outputs (Stable Diffusion, Fooocus, etc.)
+- 🔍 Advanced metadata extraction from AI-generated images
+- 🏷️ Support for multiple AI model outputs (Stable Diffusion, ComfyUI, Fooocus, etc.)
 - 🔒 NSFW content management with blur effects
 - 🏷️ Image categorization and filtering
 - 🔍 Search functionality for prompts and metadata
@@ -18,10 +18,7 @@ Developed by AIVirtus - Majdi El-Jazmawi
 
 - Python 3.8 or higher
 - Flask web framework
-- TensorFlow (for image processing)
-- Pillow (for image handling)
-- SQLAlchemy (for future database integration)
-- Better Profanity (for content filtering)
+- Pillow (for image handling and metadata extraction)
 
 ## Installation
 
@@ -86,7 +83,7 @@ The application uses the following configuration:
    - Filter images by category or model
    - Search through image prompts
 
-## Image Metadata
+## Image Metadata Extraction
 
 The application automatically extracts metadata from AI-generated images, including:
 - Prompts
@@ -96,11 +93,19 @@ The application automatically extracts metadata from AI-generated images, includ
 - Image size
 - NSFW status
 
-Supported metadata formats:
+### Supported Metadata Formats:
 - PNG text chunks
 - EXIF data
 - Fooocus metadata
+- ComfyUI workflow JSON
 - Standard image metadata
+- Various prompt formats with parameters
+
+### Metadata Extraction Capabilities:
+- Intelligent parsing of complex JSON structures from ComfyUI
+- Extraction of model names and parameters from various formats
+- Support for LoRA tags in prompts
+- Handling of different parameter formats and naming conventions
 
 ## Data Storage
 
@@ -145,5 +150,5 @@ Version 1.0.0
 
 - Built with Flask
 - UI powered by TailwindCSS
-- Image processing by TensorFlow and Pillow
+- Image processing by Pillow
 - Developed by AIVirtus - Majdi El-Jazmawi

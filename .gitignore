@@ -29,6 +29,7 @@ uploads/*
 !uploads/.gitkeep
 metadata.json
 metadata.json.bak
+instance/
 
 # IDE
 .idea/

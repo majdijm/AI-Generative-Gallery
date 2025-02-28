@@ -282,16 +282,16 @@
             
             const mainParams = [
                 { label: 'Model', value: image.model || image.model_name },
-                { label: 'Steps', value: '20' },
-                { label: 'Sampler', value: 'LCM' },
-                { label: 'Schedule Type', value: 'Automatic' },
-                { label: 'CFG Scale', value: '7' },
-                { label: 'Seed', value: '2183939284' },
-                { label: 'Size', value: '512x512' },
-                { label: 'Model Hash', value: '463d6a9fe8' },
-                { label: 'Model Name', value: 'absolutereality_v181' },
-                { label: 'Clip Skip', value: '2' },
-                { label: 'Version', value: 'v1.10.1' }
+                { label: 'Steps', value: image.steps },
+                { label: 'Sampler', value: image.sampler },
+                { label: 'Schedule Type', value: image.schedule_type },
+                { label: 'CFG Scale', value: image.cfg_scale },
+                { label: 'Seed', value: image.seed },
+                { label: 'Size', value: image.size },
+                { label: 'Model Hash', value: image.model_hash },
+                { label: 'Model Name', value: image.model_name },
+                { label: 'Clip Skip', value: image.clip_skip },
+                { label: 'Version', value: image.version }
             ];
             
             metadataHtml += `
@@ -578,6 +578,18 @@
                     }
                 } catch (error) {
                     console.error('Error extracting metadata:', error);
+                }
+            }
+        }
+
+        // Function to clear image preview
+        function clearImagePreview() {
+            const preview = document.getElementById('imagePreview');
+            if (preview) {
+                preview.classList.add('hidden');
+                const img = preview.querySelector('img');
+                if (img) {
+                    img.src = '';
                 }
             }
         }
