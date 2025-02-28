@@ -15,15 +15,6 @@ app.config['METADATA_FILE'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 # Create upload folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Initialize profanity checking
-HAS_PROFANITY = False
-try:
-    from better_profanity import profanity
-    profanity.load_censor_words()
-    HAS_PROFANITY = True
-except ImportError:
-    pass
-
 def extract_ai_metadata(image_path):
     """Extract metadata from AI-generated images"""
     try:
@@ -197,15 +188,15 @@ def load_metadata():
     return {}
 
 def check_nsfw_content(image_path, text):
-    """Check if image or text contains NSFW content"""
-    if text:
-        if HAS_PROFANITY:
-            return profanity.contains_profanity(text)
-        else:
-            # Simple fallback profanity check
-            basic_profanity = ['nsfw', 'explicit', 'adult']
-            return any(word in text.lower() for word in basic_profanity)
-    return False
+    """Check if image or text contains NSFW content using basic word filtering"""
+    if not text:
+        return False
+        
+    # Basic list of NSFW terms
+    nsfw_terms = ['nsfw', 'explicit', 'adult', 'nude', 'naked']
+    text_lower = text.lower()
+    
+    return any(term in text_lower for term in nsfw_terms)
 
 @app.route('/')
 def index():
