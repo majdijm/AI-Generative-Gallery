@@ -31,6 +31,9 @@ metadata.json
 metadata.json.bak
 instance/
 
+# Claude Code local config
+.claude/
+
 # IDE
 .idea/
 .vscode/

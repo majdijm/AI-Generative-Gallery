@@ -635,10 +635,11 @@ def index():
         if item.get('model_name'):
             models.add(item['model_name'])
     
-    return render_template('index.html', 
+    return render_template('index.html',
                          images=metadata,
                          categories=sorted(list(categories)),
-                         models=sorted(list(models)))
+                         models=sorted(list(models)),
+                         current_year=datetime.now().year)
 
 @app.route('/images')
 def get_images():
